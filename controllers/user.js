@@ -1,6 +1,7 @@
 //Import modules & dependencies
 const bcrypt = require("bcrypt")
 const User = require("../models/user")
+const mongoosePagination = require("mongoose-pagination")
 
 //import services
 const jwt = require("../services/jwt")
@@ -142,7 +143,47 @@ const profile = (req, res) => {
                 error
             })
         })
+}
 
+const list = (req, res) => {
+    //Control actual page by URL
+    let parms = 1;
+    if (req.params.page) {
+        page = req.params.page;
+    }
+    page = parseInt(page)
+    //Make consult with mongoose paginate
+    let itemsPerPage = 5;
+
+    User.find().sort("_id")
+        .paginate(page, itemsPerPage).then(async (users) => {
+            // Get total users
+            const totalUsers = await User.countDocuments({}).exec();
+            if (!users) {
+                return res.status(404).send({
+                    status: "Error",
+                    message: "No se ecnontraron usuarios",
+                    error: error
+                });
+            }
+
+            //Return result (then follows info)
+            return res.status(200).send({
+                status: "Scucces",
+                users,
+                page,
+                itemsPerPage,
+                total: totalUsers,
+                pages: Math.ceil(totalUsers / itemsPerPage)
+
+            });
+        }).catch(error => {
+            return res.status(500).send({
+                status: "Error",
+                message: "Server error",
+                error
+            })
+        })
 
 }
 
@@ -151,5 +192,6 @@ module.exports = {
     testUser,
     register,
     login,
-    profile
+    profile,
+    list
 }
