@@ -113,18 +113,43 @@ const login = (req, res) => {
                 nick: user.nick
             },
             token
-
         });
-
-
     })
-
 }
 
+const profile = (req, res) => {
+    //Recive id user parms by URL
+    const id = req.params.id;
+    //Get user data
+    User.findById(id).select({ password: 0, role: 0 })
+        .then((userProfile) => {
+            if (!id) {
+                return res.sstaus(404).send({
+                    status: "Error",
+                    message: "Usiario no existe o hay un error"
+                })
+            }
+            //Return result
+            return res.status(200).send({
+                status: "Success",
+                user: userProfile
+            })
+
+        }).catch(error => {
+            return res.status(500).send({
+                status: "Error",
+                message: "Server error",
+                error
+            })
+        })
+
+
+}
 
 //Export actions
 module.exports = {
     testUser,
     register,
-    login
+    login,
+    profile
 }
