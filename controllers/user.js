@@ -2,9 +2,11 @@
 const bcrypt = require("bcrypt")
 const User = require("../models/user")
 const mongoosePagination = require("mongoose-pagination")
+const fs = require("fs")
 
 //import services
 const jwt = require("../services/jwt")
+const user = require("../models/user")
 
 //Test actions
 const testUser = (req, res) => {
@@ -184,7 +186,114 @@ const list = (req, res) => {
                 error
             })
         })
+}
+const update = (req, res) => {
+    //Get user data to update
+    let userIdentity = req.user
+    let userToUpdate = req.body
 
+    //Delete leftover params
+    delete userToUpdate.iat
+    delete userToUpdate.exp
+    delete userToUpdate.role
+    delete userToUpdate.image
+
+    //Check if user exist(email||nick)
+    User.find({
+        $or: [
+            { email: userToUpdate.email.toLowerCase() },
+            { nick: userToUpdate.nick.toLowerCase() }
+        ]
+    }).then(async (users) => {
+        let userIsset = false
+        users.forEach(user => {
+            if (user && user._id != userIdentity.id) userIsset = true;
+        });
+        if (userIsset) {
+            return res.status(200).send({
+                status: "Succsess",
+                message: "Usuario ya existe"
+            })
+        }
+
+        //If password ---> Encrypt
+        if (userToUpdate.password) {
+            //Cypher password
+            let pwd = await bcrypt.hash(userToUpdate.password, saltRounds = 10)
+            userToUpdate.password = pwd
+        }
+
+        //Find & update user
+        try {
+            let userUpdated = await User.findByIdAndUpdate(userIdentity.id, userToUpdate, { new: true })
+            //Return user updated
+            if (!userUpdated) {
+                return res.status(404).send({ status: "Error", message: "Error al actualizar los datos" })
+            }
+            return res.status(200).send({
+                status: "Succes",
+                message: "Metodo de actualizar usuario",
+                user: userUpdated
+            })
+        } catch (error) {
+            return res.status(500).send({
+                status: "Error",
+                message: "Error al actualizar los datos"
+            })
+        }
+    })
+}
+
+const upload = (req, res) => {
+
+    //Pick image file and check if exist
+    if (!req.file) {
+        return res.status(404).send({
+            satus: "Error",
+            message: "Peticion no incluye la imagen"
+        })
+    }
+
+    //Get the file name
+    let image = req.file.originalname;
+
+    //Get file extention
+    const imageSplit = image.split("\.");
+    const extention = imageSplit[1]
+
+    //Check extention
+    //If incorrect, delete file.
+    if (extention != "png" && extention != "jpg" && extention != "jpeg" && extention != "gif") {
+        const filePath = req.file.path
+        const fileDeleted = fs.unlinkSync(filePath)
+        return res.status(400).send({
+            status: "Error",
+            messagge: "Extension del fichero invalida"
+        })
+    }
+    //If correct, save image
+    User.findOneAndUpdate({ _id: req.user.id }, { image: req.file.filename }, { new: true }).then(async (userUpdated) => {
+        if (!userUpdated) {
+            return res.status(400).send({
+                status: "Error",
+                message: "Error en la subida del avatar"
+            })
+        }
+
+        return res.status(200).send({
+            status: "Success",
+            message: "Subida de imagenes",
+            user: req.user,
+            file: req.file
+        })
+
+    }).catch((error) => {
+        return res.status(500).send({
+            status: "Error",
+            message: "Error al subir imagen"
+
+        })
+    })
 }
 
 //Export actions
@@ -193,5 +302,7 @@ module.exports = {
     register,
     login,
     profile,
-    list
+    list,
+    update,
+    upload
 }
