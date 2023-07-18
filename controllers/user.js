@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt")
 const User = require("../models/user")
 const mongoosePagination = require("mongoose-pagination")
 const fs = require("fs")
+const path = require("path")
 
 //import services
 const jwt = require("../services/jwt")
@@ -296,6 +297,24 @@ const upload = (req, res) => {
     })
 }
 
+const avatar = (req, res) => {
+    //get param from URL
+    const file = req.params.file
+    //Mount real path of image file
+    const filePath = "./uploads/avatars/" + file;
+    //Check if file exist
+    fs.stat(filePath, (error, exist) => {
+        if (!exist) {
+            return res.status(400).send({
+                status: "Error",
+                message: "No existe la imagen"
+            });
+        }
+        //Return a afile
+        return res.sendFile(path.resolve(filePath));
+    })
+}
+
 //Export actions
 module.exports = {
     testUser,
@@ -304,5 +323,6 @@ module.exports = {
     profile,
     list,
     update,
-    upload
+    upload,
+    avatar
 }
