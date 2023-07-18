@@ -24,14 +24,12 @@ const save = (req, res) => {
     //Save object in DB
 
     userToFollow.save().then((followStored) => {
-
         if (!followStored) {
             return res.status(500).send({
                 status: "Error",
                 message: "No se ha podido seguir al usuario"
             })
         }
-
         return res.status(200).send({
             status: "Scucces",
             message: "Metodo de dar follow",
@@ -44,11 +42,41 @@ const save = (req, res) => {
             message: "No se ha podido seguir al usuario"
         })
     })
+}
+const unfollow = (req, res) => {
+    //Get id of identified user
+    const userId = req.user.id
+    //Get followed user id to unfollow
+    const followedId = req.params.id
+    //Find all coincidences
+    Follow.deleteOne({
+        "user": userId,
+        "followed": followedId
+    }).then((followDeleted) => {
 
+        if (!followDeleted) {
+            return res.status(500).send({
+                status: "Error",
+                message: "No se ha dejado de seguir al usuario..."
+            })
+        }
+        return res.status(200).send({
+            status: "Scucces",
+            message: "Follow eliminado correctamente",
+            identity: req.user,
+            followDeleted
+        })
+    }).catch((error) => {
+        return res.status(500).send({
+            status: "Error",
+            message: "No se ha dejado de seguir al usuario..."
+        })
+    })
+    //Execute remove
 
 }
-
 //Export actions
 module.exports = {
-    save
+    save,
+    unfollow
 }
