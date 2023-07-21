@@ -1,14 +1,14 @@
 //Impor model
-const follow = require("../models/follows")
+const Follow = require("../models/follows")
 
 const followUserIds = async (identityUserId) => {
     try {
         //Get follows info
-        let following = await follow.find({ "user": identityUserId })
+        let following = await Follow.find({ "user": identityUserId })
             .select({ "followed": 1, "_id": 0 }).exec()
 
 
-        let followers = await follow.find({ "followed": identityUserId })
+        let followers = await Follow.find({ "followed": identityUserId })
             .select({ "user": 1, "_id": 0 }).exec()
 
         //Proccess Ids array
@@ -29,11 +29,17 @@ const followUserIds = async (identityUserId) => {
     }
 }
 
-
-
 const followThisUser = async (identityUserId, profileUserId) => {
+    //Get follows info
+    let following = await Follow.findOne({ "user": identityUserId, "followed": profileUserId })
+    let follower = await Follow.findOne({ "user": profileUserId, "followed": identityUserId })
 
+    return {
+        following,
+        follower
+    }
 }
 module.exports = {
-    followUserIds
+    followUserIds,
+    followThisUser
 }

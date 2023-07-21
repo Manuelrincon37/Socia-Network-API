@@ -123,14 +123,52 @@ const following = (req, res) => {
                 error: error
             })
         })
-
 }
 //List all users following all other users (Followers
 const followers = (req, res) => {
-    return res.status(200).send({
-        status: "Success",
-        message: "Listado de usuarios que me siguen"
-    })
+    //Get identified user id
+    let userId = req.user.id;
+    //Check if recived id in URL params
+    if (req.params.id) userId = req.params.id
+    //Check if recived page, else page 1
+    let page = 1
+    if (req.params.page) page = req.params.page
+    //Users per page to show
+    let itemsPerPage = 5;
+
+    Follow.find({ followed: userId }).populate({ path: "user followed", select: "-password -role -__v" })
+        .paginate(page, itemsPerPage)
+        .then(async (follows) => {
+
+            //Get arrais with ids  of users followed and following as identified user
+            let followUserIds = await followService.followUserIds(req.user.id)
+
+            const total = await Follow.countDocuments({}).exec()
+
+            if (!follows) {
+                return res.status(404).send({
+                    status: "Error",
+                    message: "No se han encontrado resultados"
+                })
+            }
+            return res.status(200).send({
+                status: "Success",
+                message: "Listado de usuarios que me siguen",
+                follows,
+                page,
+                pages: Math.ceil(total / itemsPerPage),
+                itemsPerPage,
+                totalFollows: total,
+                user_following: followUserIds.following,
+                user_follow_me: followUserIds.followers
+            })
+        }).catch((error) => {
+            return res.status(500).send({
+                status: "Error",
+                message: "Ha ocurrido un error",
+                error: error
+            })
+        })
 }
 //Export actions
 module.exports = {

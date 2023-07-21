@@ -7,7 +7,7 @@ const path = require("path")
 
 //import services
 const jwt = require("../services/jwt")
-const user = require("../models/user")
+const followService = require("../services/followsService")
 
 //Test actions
 const testUser = (req, res) => {
@@ -126,17 +126,23 @@ const profile = (req, res) => {
     const id = req.params.id;
     //Get user data
     User.findById(id).select({ password: 0, role: 0 })
-        .then((userProfile) => {
+        .then(async (userProfile) => {
             if (!id) {
                 return res.sstaus(404).send({
                     status: "Error",
                     message: "Usiario no existe o hay un error"
                 })
             }
+
+            //Follows info
+            const followInfo = await followService.followThisUser(req.user.id, id)
+
             //Return result
             return res.status(200).send({
                 status: "Success",
-                user: userProfile
+                user: userProfile,
+                following: followInfo.following,
+                follower: followInfo.follower
             })
 
         }).catch(error => {
@@ -161,7 +167,7 @@ const list = (req, res) => {
     User.find().sort("_id")
         .paginate(page, itemsPerPage).then(async (users) => {
             // Get total users
-            const totalUsers = await User.countDocuments({}).exec();
+            const totalUsers = await User.countDocuments({});
             if (!users) {
                 return res.status(404).send({
                     status: "Error",
@@ -169,6 +175,8 @@ const list = (req, res) => {
                     error: error
                 });
             }
+            //Get arrais with ids  of users followed and following as identified user
+            let followUserIds = await followService.followUserIds(req.user.id)
 
             //Return result (then follows info)
             return res.status(200).send({
@@ -177,8 +185,9 @@ const list = (req, res) => {
                 page,
                 itemsPerPage,
                 total: totalUsers,
-                pages: Math.ceil(totalUsers / itemsPerPage)
-
+                pages: Math.ceil(totalUsers / itemsPerPage),
+                user_following: followUserIds.following,
+                user_follow_me: followUserIds.followers
             });
         }).catch(error => {
             return res.status(500).send({
