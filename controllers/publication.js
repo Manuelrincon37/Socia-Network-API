@@ -115,7 +115,7 @@ const user = (req, res) => {
     const itemsPerpage = 5
     //Find, populate & paginate
     Publication.find({ "user": userId }).sort("-createt_at")
-        .populate({ path: "user", select: "-password -role" })
+        .populate({ path: "user", select: "-password -role -email" })
         .paginate(page, itemsPerpage)
         .then(async (publication) => {
             const total = await Publication.countDocuments({}).exec()
