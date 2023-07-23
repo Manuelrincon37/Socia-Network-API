@@ -1,6 +1,7 @@
 //Import modules & dependencies
 const bcrypt = require("bcrypt")
 const User = require("../models/user")
+const Follow = require("../models/follows")
 const mongoosePagination = require("mongoose-pagination")
 const fs = require("fs")
 const path = require("path")
@@ -231,6 +232,8 @@ const update = (req, res) => {
             //Cypher password
             let pwd = await bcrypt.hash(userToUpdate.password, saltRounds = 10)
             userToUpdate.password = pwd
+        } else {
+            delete userToUpdate.password
         }
 
         //Find & update user
@@ -324,6 +327,8 @@ const avatar = (req, res) => {
     })
 }
 
+
+
 //Export actions
 module.exports = {
     testUser,
@@ -333,5 +338,6 @@ module.exports = {
     list,
     update,
     upload,
-    avatar
+    avatar,
+    counters
 }
