@@ -9,6 +9,7 @@ const path = require("path")
 //import services
 const jwt = require("../services/jwt")
 const followService = require("../services/followsService")
+const validate = require("../helpers/validate")
 
 //Test actions
 const testUser = (req, res) => {
@@ -29,6 +30,17 @@ const register = (req, res) => {
             message: "Faltan datos por enviar"
         })
     }
+    //Advance validation 
+    try {
+        validate(params);
+    } catch (error) {
+        return res.status(400).json({
+            status: "error",
+            message: "No se ha superado la validacion de los datos"
+        })
+    }
+
+
 
     //Check duplicate users
     User.find({
@@ -338,6 +350,5 @@ module.exports = {
     list,
     update,
     upload,
-    avatar,
-    counters
+    avatar
 }
